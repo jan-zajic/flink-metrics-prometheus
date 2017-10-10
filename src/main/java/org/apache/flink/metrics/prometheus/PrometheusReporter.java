@@ -130,8 +130,17 @@ public class PrometheusReporter implements MetricReporter {
 				metric.getClass().getName());
 			return;
 		}
-		collector.register();
-		collectorsByMetricName.put(metricName, collector);
+		try {
+			collector.register();
+			collectorsByMetricName.put(metricName, collector);
+		}	catch (IllegalArgumentException e) {
+			//HACK until FLINK-7100 resolved
+			if(e.getMessage().startsWith("Collector already registered")) {
+				LOG.warn(e.getMessage());
+			} else {
+				throw e;
+			}
+		}	
 	}
 
 	@Override
