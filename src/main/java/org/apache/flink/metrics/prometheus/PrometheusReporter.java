@@ -136,8 +136,10 @@ public class PrometheusReporter implements MetricReporter {
 
 	@Override
 	public void notifyOfRemovedMetric(final Metric metric, final String metricName, final MetricGroup group) {
-		CollectorRegistry.defaultRegistry.unregister(collectorsByMetricName.get(metricName));
-		collectorsByMetricName.remove(metricName);
+		Collector collector = collectorsByMetricName.remove(metricName);
+		if(collector != null) {
+			CollectorRegistry.defaultRegistry.unregister(collector);
+		}		
 	}
 
 	@SuppressWarnings("unchecked")
