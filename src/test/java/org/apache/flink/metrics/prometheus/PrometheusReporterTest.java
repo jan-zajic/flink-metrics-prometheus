@@ -79,13 +79,7 @@ public class PrometheusReporterTest extends TestLogger {
 		Counter testCounter = new SimpleCounter();
 		testCounter.inc(7);
 
-		String counterName = "testCounter";
-		String gaugeName = SCOPE_PREFIX + counterName;
-
-		assertThat(addMetricAndPollResponse(testCounter, counterName),
-			equalTo(HELP_PREFIX + gaugeName + " " + getFullMetricName(counterName) + "\n" +
-				TYPE_PREFIX + gaugeName + " gauge" + "\n" +
-				gaugeName + DEFAULT_LABELS + " 7.0" + "\n"));
+		assertThatGaugeIsExported(testCounter, "testCounter", "7.0");
 	}
 
 	@Test
@@ -97,13 +91,7 @@ public class PrometheusReporterTest extends TestLogger {
 			}
 		};
 
-		String gaugeName = "testGauge";
-		String prometheusGaugeName = SCOPE_PREFIX + gaugeName;
-
-		assertThat(addMetricAndPollResponse(testGauge, gaugeName),
-			equalTo(HELP_PREFIX + prometheusGaugeName + " " + getFullMetricName(gaugeName) + "\n" +
-				TYPE_PREFIX + prometheusGaugeName + " gauge" + "\n" +
-				prometheusGaugeName + DEFAULT_LABELS + " 1.0" + "\n"));
+		assertThatGaugeIsExported(testGauge, "testGauge", "1.0");
 	}
 
 	@Test
@@ -114,26 +102,19 @@ public class PrometheusReporterTest extends TestLogger {
 		String summaryName = SCOPE_PREFIX + histogramName;
 
 		String response = addMetricAndPollResponse(testHistogram, histogramName);
-		assertThat(response, containsString(HELP_PREFIX + summaryName + " " + getFullMetricName(histogramName) + "\n" +
+		assertThat(response, containsString(HELP_PREFIX + summaryName + " " + histogramName + " (scope: taskmanager)\n" +
 			TYPE_PREFIX + summaryName + " summary" + "\n" +
 			summaryName + "_count" + DEFAULT_LABELS + " 1.0" + "\n"));
 		for (String quantile : Arrays.asList("0.5", "0.75", "0.95", "0.98", "0.99", "0.999")) {
 			assertThat(response, containsString(
 				summaryName + "{" + DIMENSIONS + ",quantile=\"" + quantile + "\",} " + quantile + "\n"));
-		}
+}
 	}
 
 	@Test
 	public void meterRateIsReportedAsPrometheusGauge() throws UnirestException {
 		Meter testMeter = new TestMeter();
-
-		String meterName = "testMeter";
-		String counterName = SCOPE_PREFIX + meterName;
-
-		assertThat(addMetricAndPollResponse(testMeter, meterName),
-			equalTo(HELP_PREFIX + counterName + " " + getFullMetricName(meterName) + "\n" +
-				TYPE_PREFIX + counterName + " gauge" + "\n" +
-				counterName + DEFAULT_LABELS + " 5.0" + "\n"));
+		assertThatGaugeIsExported(testMeter, "testMeter", "5.0");
 	}
 
 	@Test
@@ -180,6 +161,14 @@ public class PrometheusReporterTest extends TestLogger {
 			ConfigConstants.METRICS_REPORTER_CLASS_SUFFIX, PrometheusReporter.class.getName());
 		cfg.setString(ConfigConstants.METRICS_REPORTER_PREFIX + "test1." + ARG_PORT, "" + NON_DEFAULT_PORT);
 		return cfg;
+	}
+	
+	private void assertThatGaugeIsExported(Metric metric, String name, String expectedValue) throws UnirestException {
+		final String prometheusName = SCOPE_PREFIX + name;
+		assertThat(addMetricAndPollResponse(metric, name),
+			containsString(HELP_PREFIX + prometheusName + " " + name + " (scope: taskmanager)\n" +
+				TYPE_PREFIX + prometheusName + " gauge" + "\n" +
+				prometheusName + DEFAULT_LABELS + " " + expectedValue + "\n"));
 	}
 
 	@After
