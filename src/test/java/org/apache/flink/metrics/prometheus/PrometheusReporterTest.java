@@ -18,39 +18,38 @@
 
 package org.apache.flink.metrics.prometheus;
 
+import static org.apache.flink.metrics.prometheus.PrometheusReporter.*;
+import static org.apache.flink.runtime.metrics.scope.ScopeFormat.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
+import java.util.Arrays;
+
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.MetricOptions;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.Histogram;
+import org.apache.flink.metrics.HistogramStatistics;
 import org.apache.flink.metrics.Meter;
 import org.apache.flink.metrics.Metric;
 import org.apache.flink.metrics.SimpleCounter;
 import org.apache.flink.metrics.reporter.MetricReporter;
 import org.apache.flink.metrics.util.TestMeter;
-import org.apache.flink.runtime.metrics.MetricRegistry;
 import org.apache.flink.runtime.metrics.MetricRegistryConfiguration;
+import org.apache.flink.runtime.metrics.MetricRegistryImpl;
 import org.apache.flink.runtime.metrics.groups.FrontMetricGroup;
 import org.apache.flink.runtime.metrics.groups.TaskManagerMetricGroup;
-import org.apache.flink.runtime.metrics.util.TestingHistogram;
 import org.apache.flink.util.TestLogger;
-
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Arrays;
-
-import static org.apache.flink.metrics.prometheus.PrometheusReporter.ARG_PORT;
-import static org.apache.flink.runtime.metrics.scope.ScopeFormat.SCOPE_SEPARATOR;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 /**
  * Test for {@link PrometheusReporter}.
@@ -70,7 +69,7 @@ public class PrometheusReporterTest extends TestLogger {
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
-	private final MetricRegistry registry = new MetricRegistry(MetricRegistryConfiguration.fromConfiguration(createConfigWithOneReporter()));
+	private final MetricRegistryImpl registry = new MetricRegistryImpl(MetricRegistryConfiguration.fromConfiguration(createConfigWithOneReporter()));
 	private final MetricReporter reporter = registry.getReporters().get(0);
 
 	@Test
@@ -176,4 +175,58 @@ public class PrometheusReporterTest extends TestLogger {
 		reporter.close();
 		registry.shutdown();
 	}
+	
+	private static class TestingHistogram implements Histogram {
+
+		@Override
+		public void update(long value) {
+
+		}
+
+		@Override
+		public long getCount() {
+			return 1;
+		}
+
+		@Override
+		public HistogramStatistics getStatistics() {
+			return new HistogramStatistics() {
+				@Override
+				public double getQuantile(double quantile) {
+					return quantile;
+				}
+
+				@Override
+				public long[] getValues() {
+					return new long[0];
+				}
+
+				@Override
+				public int size() {
+					return 2;
+				}
+
+				@Override
+				public double getMean() {
+					return 3;
+				}
+
+				@Override
+				public double getStdDev() {
+					return 4;
+				}
+
+				@Override
+				public long getMax() {
+					return 5;
+				}
+
+				@Override
+				public long getMin() {
+					return 6;
+				}
+			};
+		}
+	}
+	
 }
