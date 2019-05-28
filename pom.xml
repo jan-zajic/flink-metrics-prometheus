@@ -18,7 +18,7 @@
 	<groupId>org.apache.flink</groupId>
 	<artifactId>flink-metrics-prometheus</artifactId>
 	<name>flink-metrics-prometheus</name>
-	<version>1.6.2</version>
+	<version>1.6.4</version>
 
 	<properties>
 		<prometheus.version>0.0.26</prometheus.version>
